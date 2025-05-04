@@ -494,6 +494,106 @@ const Index = () => {
                           <p className="font-medium text-white text-xl">{analysisData.header.sectionCount}</p>
                         </div>
                       </div>
+                      
+                      {/* DOS Header Information */}
+                      <div className="neo-blur rounded-xl p-4 transform transition-all hover:translate-y-[-2px] hover:bg-white/10">
+                        <p className="text-xs text-gray-400 mb-1">DOS Magic</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-medium text-white text-xl font-mono">{analysisData.header.dosHeader?.e_magic}</p>
+                        </div>
+                        <p className="text-xs text-gray-500">MZ Header</p>
+                      </div>
+                      <div className="neo-blur rounded-xl p-4 transform transition-all hover:translate-y-[-2px] hover:bg-white/10">
+                        <p className="text-xs text-gray-400 mb-1">PE Offset</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-medium text-white text-xl font-mono">{analysisData.header.dosHeader?.e_lfanew}</p>
+                        </div>
+                      </div>
+                      
+                      {/* File Header Information */}
+                      <div className="neo-blur rounded-xl p-4 transform transition-all hover:translate-y-[-2px] hover:bg-white/10">
+                        <p className="text-xs text-gray-400 mb-1">Timestamp</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-medium text-white text-xl font-mono">
+                            {new Date(analysisData.header.fileHeader?.timestamp * 1000).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {new Date(analysisData.header.fileHeader?.timestamp * 1000).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <div className="neo-blur rounded-xl p-4 transform transition-all hover:translate-y-[-2px] hover:bg-white/10">
+                        <p className="text-xs text-gray-400 mb-1">Characteristics</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-medium text-white text-xl font-mono">{analysisData.header.fileHeader?.characteristics?.value}</p>
+                        </div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <p className="text-xs text-gray-500 underline cursor-help">View flags</p>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <ul className="text-xs space-y-1">
+                                {analysisData.header.fileHeader?.characteristics?.flags?.map((flag: string, i: number) => (
+                                  <li key={i}>{flag}</li>
+                                ))}
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      
+                      {/* Optional Header Information */}
+                      <div className="neo-blur rounded-xl p-4 transform transition-all hover:translate-y-[-2px] hover:bg-white/10">
+                        <p className="text-xs text-gray-400 mb-1">Image Base</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-medium text-white text-xl font-mono">{analysisData.header.optionalHeader?.imageBase}</p>
+                        </div>
+                      </div>
+                      <div className="neo-blur rounded-xl p-4 transform transition-all hover:translate-y-[-2px] hover:bg-white/10">
+                        <p className="text-xs text-gray-400 mb-1">Subsystem</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-medium text-white text-xl">{analysisData.header.optionalHeader?.subsystem?.name}</p>
+                        </div>
+                        <p className="text-xs text-gray-500">Type: {analysisData.header.optionalHeader?.subsystem?.value}</p>
+                      </div>
+                      <div className="neo-blur rounded-xl p-4 transform transition-all hover:translate-y-[-2px] hover:bg-white/10">
+                        <p className="text-xs text-gray-400 mb-1">Section Alignment</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-medium text-white text-xl">{analysisData.header.optionalHeader?.sectionAlignment} bytes</p>
+                        </div>
+                      </div>
+                      <div className="neo-blur rounded-xl p-4 transform transition-all hover:translate-y-[-2px] hover:bg-white/10">
+                        <p className="text-xs text-gray-400 mb-1">File Alignment</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-medium text-white text-xl">{analysisData.header.optionalHeader?.fileAlignment} bytes</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Data Directories */}
+                    <div className="mt-6">
+                      <h3 className="text-sm font-medium text-white mb-3">Data Directories</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse min-w-[500px]">
+                          <thead>
+                            <tr className="text-left border-b border-white/10">
+                              <th className="pb-3 px-4 text-xs font-medium text-gray-400">Name</th>
+                              <th className="pb-3 px-4 text-xs font-medium text-gray-400">Virtual Address</th>
+                              <th className="pb-3 px-4 text-xs font-medium text-gray-400">Size</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {analysisData.header.optionalHeader?.dataDirectories?.map((dir: any, index: number) => (
+                              <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                <td className="py-2 px-4 text-white">{dir.name}</td>
+                                <td className="py-2 px-4 font-mono text-white">{dir.virtualAddress}</td>
+                                <td className="py-2 px-4 text-white">{dir.size} bytes</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </TabsContent>
                   
@@ -621,7 +721,7 @@ const Index = () => {
                                   <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
                                     <span>{res.language}</span>
                                     <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                                    <span>{res.size}</span>
+                                    <span>{res.size} bytes</span>
                                   </div>
                                 </div>
                               </div>
@@ -651,7 +751,16 @@ const Index = () => {
                             <div className="pt-3 border-t border-white/5">
                               <div className="flex items-center justify-between mb-1">
                                 <div className="text-xs text-gray-400">SHA-256</div>
-                                <button className="text-xs text-red-400 hover:text-red-300 transition-colors flex items-center gap-1">
+                                <button 
+                                  className="text-xs text-red-400 hover:text-red-300 transition-colors flex items-center gap-1"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(res.sha256);
+                                    toast({
+                                      title: "Hash copied to clipboard",
+                                      description: "SHA-256 hash has been copied to your clipboard",
+                                    });
+                                  }}
+                                >
                                   <span>Copy</span>
                                   <ExternalLink className="w-3 h-3" />
                                 </button>
@@ -689,12 +798,14 @@ const Index = () => {
                               ? "This executable is digitally signed and the signature is valid." 
                               : "This executable is signed but the signature validation failed."}
                           </p>
-                          <div className="neo-blur p-4 rounded-lg w-full max-w-md">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm text-gray-400">Signed By</span>
-                              <span className="text-sm font-medium text-white">{analysisData.signature.signer}</span>
+                          {analysisData.signature.signer && (
+                            <div className="neo-blur p-4 rounded-lg w-full max-w-md">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-gray-400">Signed By</span>
+                                <span className="text-sm font-medium text-white">{analysisData.signature.signer}</span>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </>
                       ) : (
                         <>
