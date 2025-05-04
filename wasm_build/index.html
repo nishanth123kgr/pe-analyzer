@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PE Analyzer</title>
+    <!-- Load the WebAssembly module first -->
+    <script src="pe_analyzer.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        #fileInput {
+            margin: 20px 0;
+        }
+        
+        #analyzeBtn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        #analyzeBtn:hover {
+            background-color: #2980b9;
+        }
+        
+        #analyzeBtn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        #results {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        
+        .sections-table, .imports-table, .resources-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .sections-table th, .sections-table td, 
+        .imports-table th, .imports-table td,
+        .resources-table th, .resources-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .sections-table th, .imports-table th, .resources-table th {
+            background-color: #f2f2f2;
+        }
+        
+        .sections-table tr:nth-child(even), 
+        .imports-table tr:nth-child(even),
+        .resources-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3498db;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+            display: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 16px;
+        }
+        
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        
+        .tab button.active {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            animation: fadeEffect 1s;
+        }
+        
+        @keyframes fadeEffect {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PE Analyzer</h1>
+        <p>Upload a Windows PE (Portable Executable) file for analysis. Results will be displayed in JSON format.</p>
+        
+        <div>
+            <input type="file" id="fileInput">
+            <button id="analyzeBtn" disabled>Analyze</button>
+            <div class="spinner" id="spinner"></div>
+        </div>
+        
+        <div id="analysisContainer" style="display:none;">
+            <h2>Analysis Results</h2>
+            
+            <div class="tab">
+                <button class="tablinks active" onclick="openTab(event, 'headerTab')">Header</button>
+                <button class="tablinks" onclick="openTab(event, 'sectionsTab')">Sections</button>
+                <button class="tablinks" onclick="openTab(event, 'importsTab')">Imports</button>
+                <button class="tablinks" onclick="openTab(event, 'resourcesTab')">Resources</button>
+                <button class="tablinks" onclick="openTab(event, 'signatureTab')">Signature</button>
+                <button class="tablinks" onclick="openTab(event, 'jsonTab')">Raw JSON</button>
+            </div>
+            
+            <div id="headerTab" class="tabcontent" style="display:block;">
+                <h3>PE Header</h3>
+                <div id="headerInfo"></div>
+            </div>
+            
+            <div id="sectionsTab" class="tabcontent">
+                <h3>Sections</h3>
+                <table class="sections-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>ASCII</th>
+                            <th>Virtual Address</th>
+                            <th>Virtual Size</th>
+                            <th>Raw Size</th>
+                            <th>Entropy</th>
+                            <th>MD5</th>
+                            <th>Chi²</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sectionsTableBody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="importsTab" class="tabcontent">
+                <h3>Imports</h3>
+                <div id="importsInfo"></div>
+            </div>
+            
+            <div id="resourcesTab" class="tabcontent">
+                <h3>Resources</h3>
+                <table class="resources-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Language</th>
+                            <th>Size</th>
+                            <th>Entropy</th>
+                            <th>Chi²</th>
+                            <th>SHA-256</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resourcesTableBody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="signatureTab" class="tabcontent">
+                <h3>Digital Signature</h3>
+                <div id="signatureInfo"></div>
+            </div>
+            
+            <div id="jsonTab" class="tabcontent">
+                <h3>Raw JSON</h3>
+                <pre id="results"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Wait for the module to be available
+        var modulePromise = PEAnalyzer();
+        let module = null;
+        let peAnalyzerReady = false;
+        const fileInput = document.getElementById('fileInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const results = document.getElementById('results');
+        const spinner = document.getElementById('spinner');
+        const analysisContainer = document.getElementById('analysisContainer');
+        
+        // Load the WebAssembly module
+        modulePromise.then(mod => {
+            module = mod;
+            peAnalyzerReady = true;
+            console.log('PE Analyzer WebAssembly module loaded');
+            
+            // Enable the analyze button if a file is selected
+            if (fileInput.files.length > 0) {
+                analyzeBtn.disabled = false;
+            }
+        }).catch(error => {
+            console.error('Failed to load PE Analyzer module:', error);
+            results.innerHTML = `<div class="error">Error loading PE Analyzer module: ${error.message}</div>`;
+        });
+        
+        fileInput.addEventListener('change', () => {
+            analyzeBtn.disabled = !(fileInput.files.length > 0 && peAnalyzerReady);
+        });
+        
+        analyzeBtn.addEventListener('click', async () => {
+            if (!fileInput.files.length) {
+                alert('Please select a file first');
+                return;
+            }
+            
+            // Show spinner and disable button during analysis
+            spinner.style.display = 'inline-block';
+            analyzeBtn.disabled = true;
+            results.textContent = '';
+            analysisContainer.style.display = 'none';
+            
+            try {
+                const file = fileInput.files[0];
+                const arrayBuffer = await file.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                
+                // Allocate WebAssembly memory for the file data
+                const fileDataPtr = module._malloc(uint8Array.length);
+                
+                // Copy the file data to WebAssembly memory
+                module.HEAPU8.set(uint8Array, fileDataPtr);
+                
+                // Call the analyze_pe_buffer function
+                const resultPtr = module._analyze_pe_buffer(fileDataPtr, uint8Array.length);
+                
+                // Get the result as a string
+                const resultStr = module.UTF8ToString(resultPtr);
+                
+                // Free the memory
+                module._free(fileDataPtr);
+                module._free(resultPtr);
+                
+                // Parse the JSON result
+                const parsedResult = JSON.parse(resultStr);
+                
+                // Display the parsed result
+                results.textContent = JSON.stringify(parsedResult, null, 2);
+                
+                // Show the analysis container
+                analysisContainer.style.display = 'block';
+                
+                // Populate the tabs with data
+                populateHeaderInfo(parsedResult.header);
+                populateSectionsTable(parsedResult.sections);
+                populateImportsInfo(parsedResult.imports);
+                populateResourcesTable(parsedResult.resources);
+                populateSignatureInfo(parsedResult.signature);
+                
+            } catch (error) {
+                console.error('Error analyzing file:', error);
+                results.textContent = `Error analyzing file: ${error.message}`;
+                results.className = 'error';
+            } finally {
+                // Hide spinner and re-enable button
+                spinner.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        });
+        
+        function populateHeaderInfo(header) {
+            const headerInfo = document.getElementById('headerInfo');
+            headerInfo.innerHTML = `
+                <p><strong>Format:</strong> ${header.format}</p>
+                <p><strong>Machine:</strong> ${header.machine.type} (${header.machine.code})</p>
+                <p><strong>Entry Point:</strong> ${header.entryPoint}</p>
+                <p><strong>Section Count:</strong> ${header.sectionCount}</p>
+            `;
+        }
+        
+        function populateSectionsTable(sections) {
+            const tbody = document.getElementById('sectionsTableBody');
+            tbody.innerHTML = '';
+            
+            sections.forEach(section => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${section.name}</td>
+                    <td>${section.nameASCII}</td>
+                    <td>${section.virtualAddress.hex} (${section.virtualAddress.decimal})</td>
+                    <td>${section.virtualSize.hex} (${section.virtualSize.decimal})</td>
+                    <td>${section.rawSize.hex} (${section.rawSize.decimal})</td>
+                    <td>${section.entropy.toFixed(4)}</td>
+                    <td>${section.md5}</td>
+                    <td>${section.chiSquared.toFixed(2)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function populateImportsInfo(imports) {
+            const importsInfo = document.getElementById('importsInfo');
+            importsInfo.innerHTML = '';
+            
+            imports.forEach(imp => {
+                const dllDiv = document.createElement('div');
+                dllDiv.style.marginBottom = '20px';
+                
+                const dllName = document.createElement('h4');
+                dllName.textContent = imp.dll;
+                dllDiv.appendChild(dllName);
+                
+                const funcCount = document.createElement('p');
+                funcCount.textContent = `Function Count: ${imp.functionCount}`;
+                dllDiv.appendChild(funcCount);
+                
+                if (imp.functions.length > 0) {
+                    const funcList = document.createElement('ul');
+                    imp.functions.forEach(func => {
+                        const funcItem = document.createElement('li');
+                        funcItem.textContent = func;
+                        funcList.appendChild(funcItem);
+                    });
+                    dllDiv.appendChild(funcList);
+                }
+                
+                importsInfo.appendChild(dllDiv);
+            });
+        }
+        
+        function populateResourcesTable(resources) {
+            const tbody = document.getElementById('resourcesTableBody');
+            tbody.innerHTML = '';
+            
+            if (resources.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="6">No resources found</td>';
+                tbody.appendChild(row);
+                return;
+            }
+            
+            resources.forEach(res => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${res.type}</td>
+                    <td>${res.language}</td>
+                    <td>${res.size}</td>
+                    <td>${res.entropy.toFixed(4)}</td>
+                    <td>${res.chiSquared.toFixed(2)}</td>
+                    <td>${res.sha256}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function populateSignatureInfo(signature) {
+            const signatureInfo = document.getElementById('signatureInfo');
+            
+            if (signature.isSigned) {
+                signatureInfo.innerHTML = `
+                    <p><strong>Signed:</strong> Yes</p>
+                    <p><strong>Signer:</strong> ${signature.signer || 'Unknown'}</p>
+                    <p><strong>Valid:</strong> ${signature.isValid ? 'Yes' : 'No'}</p>
+                `;
+            } else {
+                signatureInfo.innerHTML = `
+                    <p><strong>Signed:</strong> No</p>
+                    <p>This file does not contain a digital signature.</p>
+                `;
+            }
+        }
+        
+        function openTab(evt, tabName) {
+            // Declare all variables
+            let i, tabcontent, tablinks;
+            
+            // Get all elements with class="tabcontent" and hide them
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            
+            // Get all elements with class="tablinks" and remove the class "active"
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+    </script>
+</body>
+</html>
