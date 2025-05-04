@@ -3,100 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PE Analyzer</title>
+    <title>PE Analyzer Pro</title>
     <!-- Load the WebAssembly module first -->
     <script src="pe_analyzer.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #141420;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --accent: #e53e3e;
+            --accent-hover: #f56565;
+            --accent-light: rgba(229, 62, 62, 0.1);
+            --accent-gradient: linear-gradient(135deg, #e53e3e, #c53030);
+            --glass-bg: rgba(20, 20, 32, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: rgba(0, 0, 0, 0.3);
+            --error: #ff4d4d;
+            --success: #10b981;
+            --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+            --premium-shadow: 0 20px 40px -10px rgba(229, 62, 62, 0.15);
         }
         
-        h1, h2, h3 {
-            color: #2c3e50;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(229, 62, 62, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(229, 62, 62, 0.05) 0%, transparent 40%),
+                linear-gradient(to bottom, var(--bg-primary), #0c0c14);
+            background-attachment: fixed;
+            padding: 20px;
+            letter-spacing: 0.01em;
+        }
+        
+        h1, h2, h3, h4 {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: var(--accent-gradient);
+            border-radius: 3px;
         }
         
         .container {
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            padding: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--card-shadow);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+        }
+        
+        .glass-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(229, 62, 62, 0.08), transparent 60%);
+            pointer-events: none;
+        }
+        
+        .description {
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+            font-size: 1.1rem;
+            max-width: 800px;
+            font-weight: 300;
+        }
+        
+        .file-upload {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+        
+        @media (min-width: 768px) {
+            .file-upload {
+                flex-direction: row;
+                align-items: center;
+            }
+        }
+        
+        .file-input-container {
+            position: relative;
+            flex: 1;
+        }
+        
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            height: 80px;
+        }
+        
+        .file-input-label:hover {
+            background: rgba(229, 62, 62, 0.05);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: var(--premium-shadow);
         }
         
         #fileInput {
-            margin: 20px 0;
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
         }
         
-        #analyzeBtn {
-            background-color: #3498db;
+        .btn {
+            background: var(--accent-gradient);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 0.75rem 1.75rem;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 140px;
+            letter-spacing: 0.02em;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(229, 62, 62, 0.3);
         }
         
-        #analyzeBtn:hover {
-            background-color: #2980b9;
-        }
-        
-        #analyzeBtn:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-        }
-        
-        #results {
-            margin-top: 20px;
-            white-space: pre-wrap;
-            font-family: monospace;
-            overflow-x: auto;
-        }
-        
-        .sections-table, .imports-table, .resources-table {
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
             width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.6s ease;
         }
         
-        .sections-table th, .sections-table td, 
-        .imports-table th, .imports-table td,
-        .resources-table th, .resources-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(229, 62, 62, 0.4);
         }
         
-        .sections-table th, .imports-table th, .resources-table th {
-            background-color: #f2f2f2;
+        .btn:hover::before {
+            left: 100%;
         }
         
-        .sections-table tr:nth-child(even), 
-        .imports-table tr:nth-child(even),
-        .resources-table tr:nth-child(even) {
-            background-color: #f9f9f9;
+        .btn:disabled {
+            background: linear-gradient(135deg, #64646f, #46464f);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         
-        .error {
-            color: #e74c3c;
-            font-weight: bold;
+        .btn:disabled::before {
+            display: none;
         }
         
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            border-left-color: #3498db;
+            border-left-color: white;
             animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-left: 10px;
-            vertical-align: middle;
             display: none;
         }
         
@@ -105,127 +243,559 @@
             100% { transform: rotate(360deg); }
         }
         
+        .tab-container {
+            margin-top: 2.5rem;
+        }
+        
         .tab {
-            overflow: hidden;
-            border: 1px solid #ccc;
-            background-color: #f1f1f1;
-            border-radius: 5px 5px 0 0;
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            background: rgba(10, 10, 15, 0.5);
+            border-radius: 16px 16px 0 0;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: -1px;
+            position: relative;
+            z-index: 1;
+            padding: 0 10px;
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .tab::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Edge */
         }
         
         .tab button {
-            background-color: inherit;
-            float: left;
+            background: transparent;
+            color: var(--text-secondary);
             border: none;
             outline: none;
             cursor: pointer;
-            padding: 14px 16px;
-            transition: 0.3s;
-            font-size: 16px;
+            padding: 1.25rem 1.75rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: 500;
+            white-space: nowrap;
+            position: relative;
+            font-family: 'Poppins', sans-serif;
         }
         
         .tab button:hover {
-            background-color: #ddd;
+            color: var(--text-primary);
         }
         
         .tab button.active {
-            background-color: #3498db;
-            color: white;
+            color: var(--accent);
+        }
+        
+        .tab button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 3px;
+            background: var(--accent-gradient);
+            border-radius: 3px 3px 0 0;
         }
         
         .tabcontent {
             display: none;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-top: none;
-            border-radius: 0 0 5px 5px;
-            animation: fadeEffect 1s;
+            padding: 2.5rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 0 0 16px 16px;
+            border: 1px solid var(--glass-border);
+            animation: fadeEffect 0.5s;
+            box-shadow: var(--card-shadow);
         }
         
         @keyframes fadeEffect {
-            from {opacity: 0;}
-            to {opacity: 1;}
+            from {opacity: 0; transform: translateY(10px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .info-item {
+            background: rgba(10, 10, 15, 0.5);
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+        
+        .info-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border-color: rgba(229, 62, 62, 0.2);
+        }
+        
+        .info-item strong {
+            color: var(--accent);
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            overflow: hidden;
+            border-radius: 12px;
+            background: rgba(10, 10, 15, 0.5);
+            box-shadow: var(--card-shadow);
+        }
+        
+        th, td {
+            padding: 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        th {
+            background: rgba(10, 10, 15, 0.7);
+            color: var(--accent);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        tr:hover {
+            background: rgba(229, 62, 62, 0.05);
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        pre {
+            background: rgba(10, 10, 15, 0.5);
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--card-shadow);
+        }
+        
+        .error {
+            color: var(--error);
+            font-weight: bold;
+            background: rgba(255, 77, 77, 0.1);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--error);
+        }
+        
+        .file-name {
+            margin-left: 0.5rem;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .imports-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .import-card {
+            background: rgba(10, 10, 15, 0.5);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--glass-border);
+            height: 100%;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .import-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at top right, rgba(229, 62, 62, 0.1), transparent 70%);
+            border-radius: 0 0 0 100%;
+            pointer-events: none;
+        }
+        
+        .import-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--premium-shadow);
+            border-color: rgba(229, 62, 62, 0.2);
+        }
+        
+        .import-card h4 {
+            color: var(--accent);
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .function-list {
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+            margin-top: 0.75rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) rgba(10, 10, 15, 0.5);
+        }
+        
+        .function-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .function-list::-webkit-scrollbar-track {
+            background: rgba(10, 10, 15, 0.5);
+            border-radius: 3px;
+        }
+        
+        .function-list::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+        
+        .function-list ul {
+            list-style-position: inside;
+            padding-left: 0;
+        }
+        
+        .function-list li {
+            padding: 0.35rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+        
+        .function-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .signature-status {
+            display: inline-block;
+            padding: 0.35rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.03em;
+        }
+        
+        .signature-valid {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        .signature-invalid {
+            background: rgba(229, 62, 62, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(229, 62, 62, 0.2);
+        }
+        
+        .signature-none {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        
+        .logo-icon {
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        .header-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .premium-badge {
+            background: var(--accent-gradient);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            margin-left: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(229, 62, 62, 0.3);
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-title h3 {
+            margin-bottom: 0;
+        }
+        
+        .section-title .section-icon {
+            margin-right: 0.75rem;
+            color: var(--accent);
+        }
+        
+        .table-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .glass-card {
+                padding: 1.5rem;
+            }
+            
+            .tab button {
+                padding: 1rem 1.25rem;
+                font-size: 0.9rem;
+            }
+            
+            .tabcontent {
+                padding: 1.5rem;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            th, td {
+                padding: 1rem;
+                font-size: 0.9rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>PE Analyzer</h1>
-        <p>Upload a Windows PE (Portable Executable) file for analysis. Results will be displayed in JSON format.</p>
-        
-        <div>
-            <input type="file" id="fileInput">
-            <button id="analyzeBtn" disabled>Analyze</button>
-            <div class="spinner" id="spinner"></div>
-        </div>
-        
-        <div id="analysisContainer" style="display:none;">
-            <h2>Analysis Results</h2>
+        <div class="glass-card">
+            <div class="header-container">
+                <svg class="logo-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
+                    <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
+                    <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <h1>PE Analyzer</h1>
+                <span class="premium-badge">Premium</span>
+            </div>
+            <p class="description">Upload a Windows PE (Portable Executable) file for comprehensive analysis. Our advanced engine will extract detailed information about the file structure, imports, resources, and security features.</p>
             
-            <div class="tab">
-                <button class="tablinks active" onclick="openTab(event, 'headerTab')">Header</button>
-                <button class="tablinks" onclick="openTab(event, 'sectionsTab')">Sections</button>
-                <button class="tablinks" onclick="openTab(event, 'importsTab')">Imports</button>
-                <button class="tablinks" onclick="openTab(event, 'resourcesTab')">Resources</button>
-                <button class="tablinks" onclick="openTab(event, 'signatureTab')">Signature</button>
-                <button class="tablinks" onclick="openTab(event, 'jsonTab')">Raw JSON</button>
+            <div class="file-upload">
+                <div class="file-input-container">
+                    <label for="fileInput" class="file-input-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span id="fileNameDisplay">Choose a PE file or drop it here</span>
+                    </label>
+                    <input type="file" id="fileInput">
+                </div>
+                <button id="analyzeBtn" class="btn" disabled>
+                    <span>Analyze</span>
+                    <div class="spinner" id="spinner"></div>
+                </button>
             </div>
             
-            <div id="headerTab" class="tabcontent" style="display:block;">
-                <h3>PE Header</h3>
-                <div id="headerInfo"></div>
-            </div>
-            
-            <div id="sectionsTab" class="tabcontent">
-                <h3>Sections</h3>
-                <table class="sections-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>ASCII</th>
-                            <th>Virtual Address</th>
-                            <th>Virtual Size</th>
-                            <th>Raw Size</th>
-                            <th>Entropy</th>
-                            <th>MD5</th>
-                            <th>Chi²</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sectionsTableBody">
-                    </tbody>
-                </table>
-            </div>
-            
-            <div id="importsTab" class="tabcontent">
-                <h3>Imports</h3>
-                <div id="importsInfo"></div>
-            </div>
-            
-            <div id="resourcesTab" class="tabcontent">
-                <h3>Resources</h3>
-                <table class="resources-table">
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>Language</th>
-                            <th>Size</th>
-                            <th>Entropy</th>
-                            <th>Chi²</th>
-                            <th>SHA-256</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resourcesTableBody">
-                    </tbody>
-                </table>
-            </div>
-            
-            <div id="signatureTab" class="tabcontent">
-                <h3>Digital Signature</h3>
-                <div id="signatureInfo"></div>
-            </div>
-            
-            <div id="jsonTab" class="tabcontent">
-                <h3>Raw JSON</h3>
-                <pre id="results"></pre>
+            <div id="analysisContainer" style="display:none;">
+                <h2>Analysis Results</h2>
+                
+                <div class="tab-container">
+                    <div class="tab">
+                        <button class="tablinks active" onclick="openTab(event, 'headerTab')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            Header
+                        </button>
+                        <button class="tablinks" onclick="openTab(event, 'sectionsTab')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="3" y1="15" x2="21" y2="15"></line>
+                                <line x1="9" y1="3" x2="9" y2="21"></line>
+                                <line x1="15" y1="3" x2="15" y2="21"></line>
+                            </svg>
+                            Sections
+                        </button>
+                        <button class="tablinks" onclick="openTab(event, 'importsTab')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                            Imports
+                        </button>
+                        <button class="tablinks" onclick="openTab(event, 'resourcesTab')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;">
+                                <polyline points="16 18 22 12 16 6"></polyline>
+                                <polyline points="8 6 2 12 8 18"></polyline>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                            </svg>
+                            Resources
+                        </button>
+                        <button class="tablinks" onclick="openTab(event, 'signatureTab')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            Signature
+                        </button>
+                        <button class="tablinks" onclick="openTab(event, 'jsonTab')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;">
+                                <polyline points="16 18 22 12 16 6"></polyline>
+                                <polyline points="8 6 2 12 8 18"></polyline>
+                            </svg>
+                            Raw JSON
+                        </button>
+                    </div>
+                    
+                    <div id="headerTab" class="tabcontent" style="display:block;">
+                        <div class="section-title">
+                            <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            <h3>PE Header</h3>
+                        </div>
+                        <div id="headerInfo" class="info-grid"></div>
+                    </div>
+                    
+                    <div id="sectionsTab" class="tabcontent">
+                        <div class="section-title">
+                            <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="3" y1="15" x2="21" y2="15"></line>
+                                <line x1="9" y1="3" x2="9" y2="21"></line>
+                                <line x1="15" y1="3" x2="15" y2="21"></line>
+                            </svg>
+                            <h3>Sections</h3>
+                        </div>
+                        <div class="table-container">
+                            <table class="sections-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>ASCII</th>
+                                        <th>Virtual Address</th>
+                                        <th>Virtual Size</th>
+                                        <th>Raw Size</th>
+                                        <th>Entropy</th>
+                                        <th>MD5</th>
+                                        <th>Chi²</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sectionsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="importsTab" class="tabcontent">
+                        <div class="section-title">
+                            <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                            <h3>Imports</h3>
+                        </div>
+                        <div id="importsInfo" class="imports-container"></div>
+                    </div>
+                    
+                    <div id="resourcesTab" class="tabcontent">
+                        <div class="section-title">
+                            <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 18 22 12 16 6"></polyline>
+                                <polyline points="8 6 2 12 8 18"></polyline>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                            </svg>
+                            <h3>Resources</h3>
+                        </div>
+                        <div class="table-container">
+                            <table class="resources-table">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Language</th>
+                                        <th>Size</th>
+                                        <th>Entropy</th>
+                                        <th>Chi²</th>
+                                        <th>SHA-256</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resourcesTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="signatureTab" class="tabcontent">
+                        <div class="section-title">
+                            <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <h3>Digital Signature</h3>
+                        </div>
+                        <div id="signatureInfo"></div>
+                    </div>
+                    
+                    <div id="jsonTab" class="tabcontent">
+                        <div class="section-title">
+                            <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 18 22 12 16 6"></polyline>
+                                <polyline points="8 6 2 12 8 18"></polyline>
+                            </svg>
+                            <h3>Raw JSON</h3>
+                        </div>
+                        <pre id="results"></pre>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -236,6 +806,7 @@
         let module = null;
         let peAnalyzerReady = false;
         const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
         const analyzeBtn = document.getElementById('analyzeBtn');
         const results = document.getElementById('results');
         const spinner = document.getElementById('spinner');
@@ -256,10 +827,65 @@
             results.innerHTML = `<div class="error">Error loading PE Analyzer module: ${error.message}</div>`;
         });
         
+        // File input handling with drag and drop support
         fileInput.addEventListener('change', () => {
             analyzeBtn.disabled = !(fileInput.files.length > 0 && peAnalyzerReady);
+            
+            if (fileInput.files.length > 0) {
+                fileNameDisplay.textContent = fileInput.files[0].name;
+            } else {
+                fileNameDisplay.textContent = 'Choose a PE file or drop it here';
+            }
         });
         
+        // Drag and drop functionality
+        const fileInputLabel = document.querySelector('.file-input-label');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileInputLabel.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileInputLabel.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileInputLabel.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            fileInputLabel.style.borderColor = 'var(--accent)';
+            fileInputLabel.style.background = 'rgba(229, 62, 62, 0.05)';
+            fileInputLabel.style.transform = 'translateY(-2px)';
+            fileInputLabel.style.boxShadow = 'var(--premium-shadow)';
+        }
+        
+        function unhighlight() {
+            fileInputLabel.style.borderColor = 'var(--glass-border)';
+            fileInputLabel.style.background = 'rgba(255, 255, 255, 0.03)';
+            fileInputLabel.style.transform = 'none';
+            fileInputLabel.style.boxShadow = 'none';
+        }
+        
+        fileInputLabel.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileNameDisplay.textContent = files[0].name;
+                analyzeBtn.disabled = !(files.length > 0 && peAnalyzerReady);
+            }
+        }
+        
+        // Analyze button click handler
         analyzeBtn.addEventListener('click', async () => {
             if (!fileInput.files.length) {
                 alert('Please select a file first');
@@ -309,10 +935,12 @@
                 populateResourcesTable(parsedResult.resources);
                 populateSignatureInfo(parsedResult.signature);
                 
+                // Scroll to the analysis container
+                analysisContainer.scrollIntoView({ behavior: 'smooth' });
+                
             } catch (error) {
                 console.error('Error analyzing file:', error);
-                results.textContent = `Error analyzing file: ${error.message}`;
-                results.className = 'error';
+                results.innerHTML = `<div class="error">Error analyzing file: ${error.message}</div>`;
             } finally {
                 // Hide spinner and re-enable button
                 spinner.style.display = 'none';
@@ -323,16 +951,37 @@
         function populateHeaderInfo(header) {
             const headerInfo = document.getElementById('headerInfo');
             headerInfo.innerHTML = `
-                <p><strong>Format:</strong> ${header.format}</p>
-                <p><strong>Machine:</strong> ${header.machine.type} (${header.machine.code})</p>
-                <p><strong>Entry Point:</strong> ${header.entryPoint}</p>
-                <p><strong>Section Count:</strong> ${header.sectionCount}</p>
+                <div class="info-item">
+                    <strong>Format</strong> ${header.format}
+                </div>
+                <div class="info-item">
+                    <strong>Machine</strong> ${header.machine.type} (${header.machine.code})
+                </div>
+                <div class="info-item">
+                    <strong>Entry Point</strong> ${header.entryPoint}
+                </div>
+                <div class="info-item">
+                    <strong>Section Count</strong> ${header.sectionCount}
+                </div>
+                <div class="info-item">
+                    <strong>Timestamp</strong> ${header.timestamp || 'N/A'}
+                </div>
+                <div class="info-item">
+                    <strong>Characteristics</strong> ${header.characteristics || 'N/A'}
+                </div>
             `;
         }
         
         function populateSectionsTable(sections) {
             const tbody = document.getElementById('sectionsTableBody');
             tbody.innerHTML = '';
+            
+            if (sections.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="8">No sections found</td>';
+                tbody.appendChild(row);
+                return;
+            }
             
             sections.forEach(section => {
                 const row = document.createElement('tr');
@@ -354,29 +1003,39 @@
             const importsInfo = document.getElementById('importsInfo');
             importsInfo.innerHTML = '';
             
+            if (imports.length === 0) {
+                importsInfo.innerHTML = '<p>No imports found</p>';
+                return;
+            }
+            
             imports.forEach(imp => {
-                const dllDiv = document.createElement('div');
-                dllDiv.style.marginBottom = '20px';
+                const importCard = document.createElement('div');
+                importCard.className = 'import-card';
                 
                 const dllName = document.createElement('h4');
                 dllName.textContent = imp.dll;
-                dllDiv.appendChild(dllName);
+                importCard.appendChild(dllName);
                 
                 const funcCount = document.createElement('p');
                 funcCount.textContent = `Function Count: ${imp.functionCount}`;
-                dllDiv.appendChild(funcCount);
+                importCard.appendChild(funcCount);
                 
                 if (imp.functions.length > 0) {
+                    const functionListContainer = document.createElement('div');
+                    functionListContainer.className = 'function-list';
+                    
                     const funcList = document.createElement('ul');
                     imp.functions.forEach(func => {
                         const funcItem = document.createElement('li');
                         funcItem.textContent = func;
                         funcList.appendChild(funcItem);
                     });
-                    dllDiv.appendChild(funcList);
+                    
+                    functionListContainer.appendChild(funcList);
+                    importCard.appendChild(functionListContainer);
                 }
                 
-                importsInfo.appendChild(dllDiv);
+                importsInfo.appendChild(importCard);
             });
         }
         
@@ -384,7 +1043,7 @@
             const tbody = document.getElementById('resourcesTableBody');
             tbody.innerHTML = '';
             
-            if (resources.length === 0) {
+            if (!resources || resources.length === 0) {
                 const row = document.createElement('tr');
                 row.innerHTML = '<td colspan="6">No resources found</td>';
                 tbody.appendChild(row);
@@ -409,14 +1068,26 @@
             const signatureInfo = document.getElementById('signatureInfo');
             
             if (signature.isSigned) {
+                const statusClass = signature.isValid ? 'signature-valid' : 'signature-invalid';
+                const statusText = signature.isValid ? 'Valid' : 'Invalid';
+                
                 signatureInfo.innerHTML = `
-                    <p><strong>Signed:</strong> Yes</p>
-                    <p><strong>Signer:</strong> ${signature.signer || 'Unknown'}</p>
-                    <p><strong>Valid:</strong> ${signature.isValid ? 'Yes' : 'No'}</p>
+                    <div class="signature-status ${statusClass}">${statusText} Signature</div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>Signer</strong> ${signature.signer || 'Unknown'}
+                        </div>
+                        <div class="info-item">
+                            <strong>Timestamp</strong> ${signature.timestamp || 'N/A'}
+                        </div>
+                        <div class="info-item">
+                            <strong>Certificate Issuer</strong> ${signature.issuer || 'N/A'}
+                        </div>
+                    </div>
                 `;
             } else {
                 signatureInfo.innerHTML = `
-                    <p><strong>Signed:</strong> No</p>
+                    <div class="signature-status signature-none">Not Signed</div>
                     <p>This file does not contain a digital signature.</p>
                 `;
             }

@@ -287,6 +287,39 @@ void simple_sha256(const unsigned char* data, size_t len, char* output);
  #define IMAGE_FILE_MACHINE_ARM64        0xaa64  // ARM64
  #define IMAGE_FILE_MACHINE_ARMNT        0x1c4   // ARM Thumb-2
  
+ // File characteristics
+ #define IMAGE_FILE_RELOCS_STRIPPED         0x0001  // Relocation info stripped
+ #define IMAGE_FILE_EXECUTABLE_IMAGE        0x0002  // File is executable
+ #define IMAGE_FILE_LINE_NUMS_STRIPPED      0x0004  // Line numbers stripped
+ #define IMAGE_FILE_LOCAL_SYMS_STRIPPED     0x0008  // Local symbols stripped
+ #define IMAGE_FILE_AGGRESIVE_WS_TRIM       0x0010  // Aggressively trim working set
+ #define IMAGE_FILE_LARGE_ADDRESS_AWARE     0x0020  // Can handle > 2GB addresses
+ #define IMAGE_FILE_BYTES_REVERSED_LO       0x0080  // Bytes of word are reversed
+ #define IMAGE_FILE_32BIT_MACHINE           0x0100  // 32-bit machine
+ #define IMAGE_FILE_DEBUG_STRIPPED          0x0200  // Debug info stripped
+ #define IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP 0x0400  // If on removable media, copy and run from swap
+ #define IMAGE_FILE_NET_RUN_FROM_SWAP       0x0800  // If on network, copy and run from swap
+ #define IMAGE_FILE_SYSTEM                  0x1000  // System file
+ #define IMAGE_FILE_DLL                     0x2000  // DLL file
+ #define IMAGE_FILE_UP_SYSTEM_ONLY          0x4000  // Run only on uniprocessor machine
+ #define IMAGE_FILE_BYTES_REVERSED_HI       0x8000  // Bytes of word are reversed
+ 
+ // Subsystems
+ #define IMAGE_SUBSYSTEM_UNKNOWN                 0   // Unknown subsystem
+ #define IMAGE_SUBSYSTEM_NATIVE                  1   // No subsystem required
+ #define IMAGE_SUBSYSTEM_WINDOWS_GUI             2   // Windows GUI
+ #define IMAGE_SUBSYSTEM_WINDOWS_CUI             3   // Windows character mode
+ #define IMAGE_SUBSYSTEM_OS2_CUI                 5   // OS/2 character mode
+ #define IMAGE_SUBSYSTEM_POSIX_CUI               7   // POSIX character mode
+ #define IMAGE_SUBSYSTEM_NATIVE_WINDOWS          8   // Native Windows
+ #define IMAGE_SUBSYSTEM_WINDOWS_CE_GUI          9   // Windows CE
+ #define IMAGE_SUBSYSTEM_EFI_APPLICATION        10   // EFI application
+ #define IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER 11  // EFI driver with boot services
+ #define IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER     12   // EFI driver with runtime services
+ #define IMAGE_SUBSYSTEM_EFI_ROM                13   // EFI ROM image
+ #define IMAGE_SUBSYSTEM_XBOX                   14   // Xbox system
+ #define IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION 16 // Boot application
+ 
  // Optional header magic numbers
  #define IMAGE_NT_OPTIONAL_HDR32_MAGIC   0x10b   // PE32
  #define IMAGE_NT_OPTIONAL_HDR64_MAGIC   0x20b   // PE32+
@@ -327,6 +360,26 @@ void simple_sha256(const unsigned char* data, size_t len, char* output);
      DWORD dos_header_size;
      DWORD size_of_headers;
      
+     // DOS header info
+     WORD e_magic;
+     DWORD e_lfanew;
+     
+     // File header info
+     DWORD time_date_stamp;
+     WORD size_of_optional_header;
+     WORD characteristics;
+     
+     // Optional header info
+     WORD magic;
+     union {
+         DWORD image_base_32;
+         QWORD image_base_64;
+     };
+     DWORD section_alignment;
+     DWORD file_alignment;
+     WORD subsystem;
+     IMAGE_DATA_DIRECTORY data_directories[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+     
      // Sections
      PE_SECTION_INFO* sections;
      int section_count;
@@ -362,6 +415,8 @@ void simple_sha256(const unsigned char* data, size_t len, char* output);
  const char* get_machine_type_string(WORD machine);
  const char* get_resource_type_string(WORD type);
  const char* get_resource_lang_string(WORD lang_id);
+ void get_characteristics_strings(WORD characteristics, char** string_array, int* count);
+ const char* get_subsystem_string(WORD subsystem);
  
  /**
   * Main function
@@ -398,7 +453,78 @@ void simple_sha256(const unsigned char* data, size_t len, char* output);
      printf("      \"code\": \"0x%04X\"\n", pe_info.machine);
      printf("    },\n");
      printf("    \"entryPoint\": \"0x%08X\",\n", pe_info.entry_point);
-     printf("    \"sectionCount\": %d\n", pe_info.num_sections);
+     printf("    \"sectionCount\": %d,\n", pe_info.num_sections);
+     
+     // DOS header information
+     printf("    \"dosHeader\": {\n");
+     printf("      \"e_magic\": \"0x%04X\",\n", pe_info.e_magic);
+     printf("      \"e_lfanew\": \"0x%08X\"\n", pe_info.e_lfanew);
+     printf("    },\n");
+     
+     // File header information
+     printf("    \"fileHeader\": {\n");
+     printf("      \"timestamp\": %u,\n", pe_info.time_date_stamp);
+     printf("      \"optionalHeaderSize\": %u,\n", pe_info.size_of_optional_header);
+     printf("      \"characteristics\": {\n");
+     printf("        \"value\": \"0x%04X\",\n", pe_info.characteristics);
+     
+     // Print characteristics as strings
+     char* char_strings[15];  // Maximum 15 flags
+     int char_count = 0;
+     get_characteristics_strings(pe_info.characteristics, char_strings, &char_count);
+     
+     printf("        \"flags\": [\n");
+     for (int i = 0; i < char_count; i++) {
+         printf("          \"%s\"%s", char_strings[i], i < char_count - 1 ? ",\n" : "\n");
+         free(char_strings[i]);  // Free the allocated string
+     }
+     printf("        ]\n");
+     printf("      }\n");
+     printf("    },\n");
+     
+     // Optional header information
+     printf("    \"optionalHeader\": {\n");
+     printf("      \"magic\": \"0x%04X\",\n", pe_info.magic);
+     printf("      \"entryPoint\": \"0x%08X\",\n", pe_info.entry_point);
+     
+     // Image base depends on format
+     if (pe_info.is_64bit) {
+         printf("      \"imageBase\": \"0x%016llX\",\n", pe_info.image_base_64);
+     } else {
+         printf("      \"imageBase\": \"0x%08X\",\n", pe_info.image_base_32);
+     }
+     
+     printf("      \"sectionAlignment\": %u,\n", pe_info.section_alignment);
+     printf("      \"fileAlignment\": %u,\n", pe_info.file_alignment);
+     printf("      \"subsystem\": {\n");
+     printf("        \"value\": %u,\n", pe_info.subsystem);
+     printf("        \"name\": \"%s\"\n", get_subsystem_string(pe_info.subsystem));
+     printf("      },\n");
+     
+     // Data directories
+     printf("      \"dataDirectories\": [\n");
+     const char* directory_names[] = {
+         "EXPORT", "IMPORT", "RESOURCE", "EXCEPTION", "SECURITY",
+         "BASERELOC", "DEBUG", "ARCHITECTURE", "GLOBALPTR", "TLS",
+         "LOAD_CONFIG", "BOUND_IMPORT", "IAT", "DELAY_IMPORT", 
+         "COM_DESCRIPTOR", "RESERVED"
+     };
+     
+     for (int i = 0; i < IMAGE_NUMBEROF_DIRECTORY_ENTRIES; i++) {
+         IMAGE_DATA_DIRECTORY* dir = &pe_info.data_directories[i];
+         
+         // Only print directories with data
+         if (dir->VirtualAddress != 0 || dir->Size != 0) {
+             printf("        {\n");
+             printf("          \"name\": \"%s\",\n", directory_names[i]);
+             printf("          \"virtualAddress\": \"0x%08X\",\n", dir->VirtualAddress);
+             printf("          \"size\": %u\n", dir->Size);
+             printf("        }%s", i < IMAGE_NUMBEROF_DIRECTORY_ENTRIES - 1 ? ",\n" : "\n");
+         }
+     }
+     printf("      ]\n");
+     printf("    }\n");
+     
      printf("  },\n");
      
      // Section information
@@ -572,7 +698,78 @@ void simple_sha256(const unsigned char* data, size_t len, char* output);
     APPEND("      \"code\": \"0x%04X\"\n", pe_info.machine);
     APPEND("    },\n");
     APPEND("    \"entryPoint\": \"0x%08X\",\n", pe_info.entry_point);
-    APPEND("    \"sectionCount\": %d\n", pe_info.num_sections);
+    APPEND("    \"sectionCount\": %d,\n", pe_info.num_sections);
+    
+    // DOS header information
+    APPEND("    \"dosHeader\": {\n");
+    APPEND("      \"e_magic\": \"0x%04X\",\n", pe_info.e_magic);
+    APPEND("      \"e_lfanew\": \"0x%08X\"\n", pe_info.e_lfanew);
+    APPEND("    },\n");
+    
+    // File header information
+    APPEND("    \"fileHeader\": {\n");
+    APPEND("      \"timestamp\": %u,\n", pe_info.time_date_stamp);
+    APPEND("      \"optionalHeaderSize\": %u,\n", pe_info.size_of_optional_header);
+    APPEND("      \"characteristics\": {\n");
+    APPEND("        \"value\": \"0x%04X\",\n", pe_info.characteristics);
+    
+    // Print characteristics as strings
+    char* char_strings[15];  // Maximum 15 flags
+    int char_count = 0;
+    get_characteristics_strings(pe_info.characteristics, char_strings, &char_count);
+    
+    APPEND("        \"flags\": [\n");
+    for (int i = 0; i < char_count; i++) {
+        APPEND("          \"%s\"%s", char_strings[i], i < char_count - 1 ? ",\n" : "\n");
+        free(char_strings[i]);  // Free the allocated string
+    }
+    APPEND("        ]\n");
+    APPEND("      }\n");
+    APPEND("    },\n");
+    
+    // Optional header information
+    APPEND("    \"optionalHeader\": {\n");
+    APPEND("      \"magic\": \"0x%04X\",\n", pe_info.magic);
+    APPEND("      \"entryPoint\": \"0x%08X\",\n", pe_info.entry_point);
+    
+    // Image base depends on format
+    if (pe_info.is_64bit) {
+        APPEND("      \"imageBase\": \"0x%016llX\",\n", pe_info.image_base_64);
+    } else {
+        APPEND("      \"imageBase\": \"0x%08X\",\n", pe_info.image_base_32);
+    }
+    
+    APPEND("      \"sectionAlignment\": %u,\n", pe_info.section_alignment);
+    APPEND("      \"fileAlignment\": %u,\n", pe_info.file_alignment);
+    APPEND("      \"subsystem\": {\n");
+    APPEND("        \"value\": %u,\n", pe_info.subsystem);
+    APPEND("        \"name\": \"%s\"\n", get_subsystem_string(pe_info.subsystem));
+    APPEND("      },\n");
+    
+    // Data directories
+    APPEND("      \"dataDirectories\": [\n");
+    const char* directory_names[] = {
+        "EXPORT", "IMPORT", "RESOURCE", "EXCEPTION", "SECURITY",
+        "BASERELOC", "DEBUG", "ARCHITECTURE", "GLOBALPTR", "TLS",
+        "LOAD_CONFIG", "BOUND_IMPORT", "IAT", "DELAY_IMPORT", 
+        "COM_DESCRIPTOR", "RESERVED"
+    };
+    
+    for (int i = 0; i < IMAGE_NUMBEROF_DIRECTORY_ENTRIES; i++) {
+        IMAGE_DATA_DIRECTORY* dir = &pe_info.data_directories[i];
+        
+        // Only print directories with data
+        if (dir->VirtualAddress != 0 || dir->Size != 0) {
+            APPEND("        {\n");
+            APPEND("          \"name\": \"%s\",\n", directory_names[i]);
+            APPEND("          \"virtualAddress\": \"0x%08X\",\n", dir->VirtualAddress);
+            APPEND("          \"size\": %u\n", dir->Size);
+            APPEND("        }%s", i < IMAGE_NUMBEROF_DIRECTORY_ENTRIES - 1 ? ",\n" : "\n");
+        }
+    }
+    APPEND("      ]\n");
+    APPEND("    }\n");
+    
     APPEND("  },\n");
     
     // Generate JSON output - sections
@@ -851,6 +1048,10 @@ void simple_sha256(const unsigned char* data, size_t len, char* output);
          return false;
      }
      
+     // Store DOS header fields
+     pe_info->e_magic = dos_header->e_magic;
+     pe_info->e_lfanew = dos_header->e_lfanew;
+     
      // Store DOS header size and save to pe_info
      pe_info->dos_header_size = dos_header->e_lfanew - sizeof(IMAGE_DOS_HEADER);
      
@@ -872,6 +1073,11 @@ void simple_sha256(const unsigned char* data, size_t len, char* output);
      
      // Get file header
      IMAGE_FILE_HEADER* file_header = &nt_header->FileHeader;
+     
+     // Store file header fields
+     pe_info->time_date_stamp = file_header->TimeDateStamp;
+     pe_info->size_of_optional_header = file_header->SizeOfOptionalHeader;
+     pe_info->characteristics = file_header->Characteristics;
      
      // Store machine type
      pe_info->machine = file_header->Machine;
@@ -897,6 +1103,7 @@ void simple_sha256(const unsigned char* data, size_t len, char* output);
      
      // Get optional header magic to determine if it's PE32 or PE32+
      WORD* magic = (WORD*)(pe_file->data + *optional_header_offset);
+     pe_info->magic = *magic;
      
      if (*magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
          // PE32 format
@@ -909,6 +1116,17 @@ void simple_sha256(const unsigned char* data, size_t len, char* output);
          IMAGE_OPTIONAL_HEADER32* opt_header = (IMAGE_OPTIONAL_HEADER32*)(pe_file->data + *optional_header_offset);
          pe_info->entry_point = opt_header->AddressOfEntryPoint;
          pe_info->size_of_headers = opt_header->SizeOfHeaders;
+         
+         // Store additional optional header fields
+         pe_info->image_base_32 = opt_header->ImageBase;
+         pe_info->section_alignment = opt_header->SectionAlignment;
+         pe_info->file_alignment = opt_header->FileAlignment;
+         pe_info->subsystem = opt_header->Subsystem;
+         
+         // Copy data directories
+         for (int i = 0; i < IMAGE_NUMBEROF_DIRECTORY_ENTRIES && i < opt_header->NumberOfRvaAndSizes; i++) {
+             pe_info->data_directories[i] = opt_header->DataDirectory[i];
+         }
      }
      else if (*magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
          // PE32+ format
@@ -921,6 +1139,17 @@ void simple_sha256(const unsigned char* data, size_t len, char* output);
          IMAGE_OPTIONAL_HEADER64* opt_header = (IMAGE_OPTIONAL_HEADER64*)(pe_file->data + *optional_header_offset);
          pe_info->entry_point = opt_header->AddressOfEntryPoint;
          pe_info->size_of_headers = opt_header->SizeOfHeaders;
+         
+         // Store additional optional header fields
+         pe_info->image_base_64 = opt_header->ImageBase;
+         pe_info->section_alignment = opt_header->SectionAlignment;
+         pe_info->file_alignment = opt_header->FileAlignment;
+         pe_info->subsystem = opt_header->Subsystem;
+         
+         // Copy data directories
+         for (int i = 0; i < IMAGE_NUMBEROF_DIRECTORY_ENTRIES && i < opt_header->NumberOfRvaAndSizes; i++) {
+             pe_info->data_directories[i] = opt_header->DataDirectory[i];
+         }
      }
      else {
          // Unknown format
@@ -1566,6 +1795,67 @@ const char* get_resource_lang_string(WORD lang_id) {
         default: {
             static char buffer[16];
             sprintf(buffer, "Language %u", lang_id);
+            return buffer;
+        }
+    }
+}
+
+/**
+ * Get string representation of file characteristics
+ */
+void get_characteristics_strings(WORD characteristics, char** string_array, int* count) {
+    static const struct {
+        WORD flag;
+        const char* description;
+    } char_flags[] = {
+        { IMAGE_FILE_RELOCS_STRIPPED,         "IMAGE_FILE_RELOCS_STRIPPED" },
+        { IMAGE_FILE_EXECUTABLE_IMAGE,        "IMAGE_FILE_EXECUTABLE_IMAGE" },
+        { IMAGE_FILE_LINE_NUMS_STRIPPED,      "IMAGE_FILE_LINE_NUMS_STRIPPED" },
+        { IMAGE_FILE_LOCAL_SYMS_STRIPPED,     "IMAGE_FILE_LOCAL_SYMS_STRIPPED" },
+        { IMAGE_FILE_AGGRESIVE_WS_TRIM,       "IMAGE_FILE_AGGRESIVE_WS_TRIM" },
+        { IMAGE_FILE_LARGE_ADDRESS_AWARE,     "IMAGE_FILE_LARGE_ADDRESS_AWARE" },
+        { IMAGE_FILE_BYTES_REVERSED_LO,       "IMAGE_FILE_BYTES_REVERSED_LO" },
+        { IMAGE_FILE_32BIT_MACHINE,           "IMAGE_FILE_32BIT_MACHINE" },
+        { IMAGE_FILE_DEBUG_STRIPPED,          "IMAGE_FILE_DEBUG_STRIPPED" },
+        { IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP, "IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP" },
+        { IMAGE_FILE_NET_RUN_FROM_SWAP,       "IMAGE_FILE_NET_RUN_FROM_SWAP" },
+        { IMAGE_FILE_SYSTEM,                  "IMAGE_FILE_SYSTEM" },
+        { IMAGE_FILE_DLL,                     "IMAGE_FILE_DLL" },
+        { IMAGE_FILE_UP_SYSTEM_ONLY,          "IMAGE_FILE_UP_SYSTEM_ONLY" },
+        { IMAGE_FILE_BYTES_REVERSED_HI,       "IMAGE_FILE_BYTES_REVERSED_HI" }
+    };
+    
+    *count = 0;
+    for (int i = 0; i < sizeof(char_flags) / sizeof(char_flags[0]); i++) {
+        if (characteristics & char_flags[i].flag) {
+            string_array[*count] = strdup(char_flags[i].description);
+            (*count)++;
+        }
+    }
+}
+
+/**
+ * Get string representation of subsystem
+ */
+const char* get_subsystem_string(WORD subsystem) {
+    switch (subsystem) {
+        case IMAGE_SUBSYSTEM_UNKNOWN:                 return "UNKNOWN";
+        case IMAGE_SUBSYSTEM_NATIVE:                  return "NATIVE";
+        case IMAGE_SUBSYSTEM_WINDOWS_GUI:             return "WINDOWS_GUI";
+        case IMAGE_SUBSYSTEM_WINDOWS_CUI:             return "WINDOWS_CUI";
+        case IMAGE_SUBSYSTEM_OS2_CUI:                 return "OS2_CUI";
+        case IMAGE_SUBSYSTEM_POSIX_CUI:               return "POSIX_CUI";
+        case IMAGE_SUBSYSTEM_NATIVE_WINDOWS:          return "NATIVE_WINDOWS";
+        case IMAGE_SUBSYSTEM_WINDOWS_CE_GUI:          return "WINDOWS_CE_GUI";
+        case IMAGE_SUBSYSTEM_EFI_APPLICATION:         return "EFI_APPLICATION";
+        case IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER: return "EFI_BOOT_SERVICE_DRIVER";
+        case IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER:      return "EFI_RUNTIME_DRIVER";
+        case IMAGE_SUBSYSTEM_EFI_ROM:                 return "EFI_ROM";
+        case IMAGE_SUBSYSTEM_XBOX:                    return "XBOX";
+        case IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION: return "WINDOWS_BOOT_APPLICATION";
+        default: {
+            static char buffer[32];
+            sprintf(buffer, "UNKNOWN (%d)", subsystem);
             return buffer;
         }
     }
